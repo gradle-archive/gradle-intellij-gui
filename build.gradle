@@ -1,0 +1,305 @@
+apply id: 'java'
+
+/*
+This builds the Idea gradle plugin. This requires a copy of Idea 9 to be installed on your machine as well as at least Gradle.
+It compiles against several libs and plugins that are distributed with Idea as well as the open api inside Gradle.
+By default, this uses the open-api jar from the gradle doing the build, however, you can override this to use a different
+one. See getOpenAPIJar().
+*/
+
+ideaDirectoryVar = null
+ideaLibDirectoryVar = null
+ideaBuiltInPluginsDirectoryVar = null
+
+dependencies
+{
+   compile files( getIdeaLibFiles() )
+   compile files( getIdeaPluginFiles() )
+
+  //Need to compiles against the gradle-open-api jar. This defines the version of gradle the plugin works with.
+  //compile 'org.codehaus.gradle:gradle-open-api:0.9'  whenever gradle is put into a repo (this is probably not the correct specifier)
+  compile files( getOpenAPIJar() )                    //for now, we'll get it manually
+}
+
+/*
+This builds and deploys the idea plugin to the current Idea installation. This is really just copying jars to a specific
+directory. We get that directory from Idea's installation.
+ */
+task deploy(dependsOn:build, description: 'Builds and places the Gradle GUI plugin in your Idea plugin directory') <<
+{
+  //This is the directory for a user's Idea plugins (vs the ones that are built-in and stored with the application itself).
+  //Idea stores a property that defines where this is. We'll ask it.
+  def userPluginsDirectory = getIdeaFileProperty( 'idea.plugins.path' )
+  if( userPluginsDirectory == null )
+    throw new RuntimeException( "Could not determine the directory for user plugins. You'll have to manually deploy it." )
+
+  def destinationDirectory = new File( userPluginsDirectory, "gradle gui/lib" )
+  destinationDirectory.mkdirs()
+
+  //delete the old plugin files
+  destinationDirectory.eachFile { it.delete() }
+
+  //copy the jars to the destination
+  ant.copy(file: jar.archivePath, tofile: new File( destinationDirectory, "gradle gui.jar" ).getAbsolutePath() )  //we want to remove any versioning from the jar name
+  ant.copy(file: getOpenAPIJar().getAbsolutePath(), todir: destinationDirectory )
+}
+
+/**
+This gets all the jar files inside Idea's lib directory that we depend upon.
+These are shipped with Idea.
+ */
+def getIdeaLibFiles()
+{
+   def ideaLibDirectory = getIdeaLibDirectory()
+   def files = [ new File( ideaLibDirectory, 'annotations.jar' ),
+                 new File( ideaLibDirectory, 'extensions.jar' ),
+                 getVersionedJar( getIdeaLibDirectory(), "groovy-all" ),  //the name of the groovy jar is versioned, most of the rest are not.
+                 new File( ideaLibDirectory, 'idea.jar' ),
+                 new File( ideaLibDirectory, 'jdom.jar' ),
+                 new File( ideaLibDirectory, 'openapi.jar' ),
+                 new File( ideaLibDirectory, 'util.jar' ) ]
+
+   verifyFilesExist( files )
+
+   return files
+}
+
+/**
+ This gets all the jar files from Idea's built-in plugins that we depend upon.
+ These are shipped with Idea.
+ */
+def getIdeaPluginFiles()
+{
+  def pluginsDirectory = getIdeaBuiltInPluginsDirectory()
+  def files = [new File( pluginsDirectory, 'Groovy/lib/Groovy.jar') ]
+
+  verifyFilesExist( files )
+
+  return files
+}
+
+/**
+Returns the Idea directory. This is the root directory of where Idea is installed on this machine. It sets
+a member variable once we've got it.
+ */
+def getIdeaDirectory()
+{
+  if( ideaDirectoryVar == null )
+     ideaDirectoryVar = determineIdeaDirectory()
+  
+  return ideaDirectoryVar
+}
+
+/**
+Returns Idea's 'lib' directory. This is the 'lib' directory underneath the root directory of where Idea is
+installed. It sets a member variable once we've got it.
+*/
+def getIdeaLibDirectory()
+{
+  if( ideaLibDirectoryVar == null )
+    ideaLibDirectoryVar = determineIdeaLibDirectory()
+  return ideaLibDirectoryVar
+}
+
+/**
+Returns Idea's plugin directory. This is where its built-in plugins are installed, NOT the directory where user
+plugins are installed. It sets a member variable once we've got it.
+ */
+def getIdeaBuiltInPluginsDirectory()
+{
+  if( ideaBuiltInPluginsDirectoryVar == null )
+    ideaBuiltInPluginsDirectoryVar = determineIdeaBuildInPluginDirectory()
+  return ideaBuiltInPluginsDirectoryVar
+}
+
+//this gets the Idea directory and validates that the version of Idea is correct
+def determineIdeaDirectory()
+{
+   String ideaPath = System.getProperty('idea.home')
+
+   if( ideaPath == null )
+      throw new RuntimeException( 'You must specify the path to Idea as the system property \'idea.home\'.')
+   File ideaDirectory = new File( ideaPath )
+   if( !ideaDirectory.exists() )
+      throw new RuntimeException( 'Path to Idea invalid (\'' + ideaDirectory + '\'). You must specify the path to Idea as the system property \'idea.home\'.')
+
+   int version = getIdeaBuildVersion( ideaDirectory )
+   if( version < 9 )
+      throw new RuntimeException( "Invalid version of Idea. This requires version 9 or higher." )
+
+   return ideaDirectory
+}
+
+/**
+This returns the major version of Idea. We're not really interested in the version itself
+as much as whether its a version we support. It could also be used going forward to support
+multiple versions of Idea simultaneously.
+ */
+def getIdeaBuildVersion( File ideaDirectory )
+{
+  File buildFile = new File( ideaDirectory, 'build.txt' )
+  if( !buildFile.exists() )
+    throw new RuntimeException( 'Path to Idea invalid (\'' + path + '\'). Expected to find \'build.txt\' in this directory.')
+
+   String version = buildFile.getText()
+   if( version == null || version.isEmpty() )
+      throw new Exception("Cannot determine Idea version. Trying to find version from file: " + buildFile )
+
+   //the 9 versions changed their version strings to a 2-character code, followed by a decimal
+   if( version.startsWith("IU-") ||
+       version.startsWith("IC-") )
+   {
+     //at this point, we know its at least version 9.
+      return 9
+   }
+
+   //all other versions were just an integer build number.
+   Integer versionNumber = Integer.parseInt( version )
+
+   //we'll just check some versions we know about.
+   if( versionNumber <= 9952 )      //8.1.4
+   {
+      if( versionNumber <= 7491 )   //7.0.4
+         return 7
+
+      return 8
+   }
+
+   throw new Exception("Cannot determine Idea version (" + version + "). Trying to find version from file: " + buildFile )
+}
+
+//this gets the lib directory underneath Idea
+def determineIdeaLibDirectory() { return new File( getIdeaDirectory(), "lib" )}
+def determineIdeaBuildInPluginDirectory() { return new File( getIdeaDirectory(), "plugins" )}
+
+/**
+This returns a jar named 'prefix[version].jar'. We want to ignore the version. This is only expecting a single
+version of the jar to exist and throws an exception if it finds multiples. This could be altered in the future
+to get the latest version.
+ */
+def getVersionedJar( File libDirectory, String prefix )
+{
+    if (!libDirectory.exists()) {
+        return null
+    }
+
+    //try to get the gradle.jar. It'll be "gradle-[version].jar"
+
+    File[] files = libDirectory.listFiles().findAll{ it.name.toLowerCase().startsWith( prefix ) && it.name.toLowerCase().endsWith( '.jar' ) }
+
+    if (files == null || files.length == 0) {
+        return null
+    }
+
+    //if they've given us a directory with multiple gradle jars, tell them. We won't know which one to use.
+    if (files.length > 1) {
+        throw new RuntimeException(
+                'multiple "' + prefix + '" jars found. Cannot determine which one to use. Found files: '+ files )
+    }
+
+    return files[0]
+}
+
+/**
+Temporary function to get the gradle-open-api jar to compile against. This defines the version of gradle the
+plugin works with. We'll try to find it based on the current gradle.home. However, you may want
+to build against a different version than the gradle you're building with (building for an older or newer version),
+so we also allow you to override it's expected location.
+ */
+def getOpenAPIJar()
+{
+  def openAPIJar = System.getProperty( "open-api.home" )
+  if( openAPIJar == null )
+  {
+    def gradleHome = System.getProperty("gradle.home")
+    System.out.println( 'gradle.home = ' + gradleHome )
+    if( gradleHome != null )
+      openAPIJar = gradleHome + "/lib"
+  }
+
+  File jar = null
+  if( openAPIJar != null )
+  {
+    File parentDirectory = new File( openAPIJar )
+
+    jar = getVersionedJar( parentDirectory, 'gradle-open-api-' )
+  }
+
+  if( jar == null)
+    throw new RuntimeException( 'Could not locate gradle-open-api jar. It will be determined from the currently running gradle if the \'gradle.home\' System.property is set, or you can specify it as \'open-api.home\' (specify the path to the directory where the open-api jar is located.)' )
+
+  return jar
+}
+
+def verifyFilesExist( List files )
+{
+  Iterator iterator = files.iterator()
+  while( iterator.hasNext() )
+  {
+     File file = (File) iterator.next()
+     if( !file.exists() )
+       throw new RuntimeException("File does not exist: " + file )
+  }
+}
+
+/**
+ This returns the value of an Idea file property. This comes from a file (created by IntelliJ)
+ that defines several locations and properties used by Idea.
+ */
+def getIdeaFileProperty( String propertyName )
+{
+   String osName = System.getProperty("os.name")
+   if( osName.equalsIgnoreCase( "mac os x" ) )  //we have to do something different for OS X
+       return getIdeaFilePropertyFromInfoPlist( propertyName )
+
+    return getIdeaFilePropertyInternal( propertyName )
+}
+
+/**
+ This returns the value of an Idea file property. This version is used on Windows and Linux.
+ */
+def getIdeaFilePropertyInternal( String propertyName )
+{
+   Properties props = new Properties()
+   new File(ideaDirectoryVar, 'bin/idea.properties').withReader { props.load it }
+   String path = props[ propertyName ]
+   if (path == null)
+      return null
+
+   path = path.replace('${user.home}', System.getProperty('user.home'))
+   return new File(path)
+}
+
+/**
+ This returns the value of an Idea file property when running on OS X. OS X uses info.plist files
+ which are really just xml but made to be SAX parser friendly as the elements are ordered where
+ one node is the key and its following sibling is the value. Instead of using attributes, they
+ use the xml 'text content'.
+ */
+def getIdeaFilePropertyFromInfoPlist( String propertyName )
+{
+   File infoPlistFile = new File( ideaDirectoryVar, 'Contents/info.plist' )
+   if( !infoPlistFile.exists() )
+       throw new RuntimeException( "Could not find Idea's info.plist file. Expected at '" + infoPlistFile.getAbsolutePath() + "'")
+   def xml = new XmlParser().parse(infoPlistFile)
+
+  //I don't like this, but we'll do a BREADTH first search and when we find the sought node, we'll
+  //get the next node we come to. The properties are buried multiple levels deep. I would have
+  //preferred to find the property then get its sibling, but that wasn't working (parent().children()
+  //always returned an empty list). As it is, this seems very fragile.
+  boolean stopNextTime;
+  def valueNode = xml.breadthFirst().find
+  {
+    def stopThisTime = stopNextTime //we were instructed to stop the next time around (we're now at the next time)
+    stopNextTime = propertyName.equals( it.text() )
+    return stopThisTime
+  }
+
+  if( valueNode == null )
+      return null
+
+   def path = valueNode.text()
+
+   path = path.replace('~', System.getProperty('user.home'))
+   return new File(path)
+}
