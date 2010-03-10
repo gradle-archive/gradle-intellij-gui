@@ -102,8 +102,8 @@ def getIdeaLibDirectory()
 }
 
 /**
-Returns Idea's plugin directory. This is where its built-in plugins are installed, NOT the directory where user
-plugins are installed. It sets a member variable once we've got it.
+Returns Idea's built-in plugin directory. This is where its built-in plugins that come with Idea are placed,
+NOT the directory where user plugins are installed. It sets a member variable once we've got it.
  */
 def getIdeaBuiltInPluginsDirectory()
 {
@@ -115,19 +115,33 @@ def getIdeaBuiltInPluginsDirectory()
 //this gets the Idea directory and validates that the version of Idea is correct
 def determineIdeaDirectory()
 {
-   String ideaPath = System.getProperty('idea.home')
+   String ideaPath = getPropertyValue('idea.home')
 
    if( ideaPath == null )
       throw new RuntimeException( 'You must specify the path to Idea as the system property \'idea.home\'.')
    File ideaDirectory = new File( ideaPath )
    if( !ideaDirectory.exists() )
-      throw new RuntimeException( 'Path to Idea invalid (\'' + ideaDirectory + '\'). You must specify the path to Idea as the system property \'idea.home\'.')
+      throw new RuntimeException( 'Path to Idea invalid (\'' + ideaDirectory + '\'). You must specify the path to Idea as \'idea.home\' as a java system property or gradle property.')
 
    int version = getIdeaBuildVersion( ideaDirectory )
    if( version < 9 )
       throw new RuntimeException( "Invalid version of Idea. This requires version 9 or higher." )
 
    return ideaDirectory
+}
+
+/*
+This gets a property first from the java system properties. If that's not found, then from gradle's
+project properties (defined in a gradle.properties file in the root directory of the project). This
+allows you to specify properties either on command line via -D or in a more-permanant fashion.
+ */
+def getPropertyValue( String key )
+{
+  String value = System.getProperty( key );
+  if( value == null )
+    value = property( key );
+
+  return value;
 }
 
 /**
@@ -208,7 +222,7 @@ so we also allow you to override it's expected location.
  */
 def getOpenAPIJar()
 {
-  def openAPIJar = System.getProperty( "open-api.home" )
+  def openAPIJar = getPropertyValue( "open-api.home" )
   if( openAPIJar == null )
   {
     def gradleHome = System.getProperty("gradle.home")
@@ -226,7 +240,7 @@ def getOpenAPIJar()
   }
 
   if( jar == null)
-    throw new RuntimeException( 'Could not locate gradle-open-api jar. It will be determined from the currently running gradle if the \'gradle.home\' System.property is set, or you can specify it as \'open-api.home\' (specify the path to the directory where the open-api jar is located.)' )
+    throw new RuntimeException( 'Could not locate gradle-open-api jar. It will be determined from the currently running gradle\'s \'gradle.home\', or you can specify it as \'open-api.home\' as a java system property or gradle property. Its the path to the directory where the open-api jar is located.' )
 
   return jar
 }
