@@ -296,3 +296,8 @@ def getIdeaFilePropertyFromInfoPlist(String propertyName) {
     path = path.replace('~', System.getProperty('user.home'))
     return new File(path)
 }
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '0.9-20100315112026+0100'
+    jarPath = 'wrapper'
+}
