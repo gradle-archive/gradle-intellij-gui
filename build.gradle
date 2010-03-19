@@ -21,29 +21,41 @@ dependencies
     compile files(getOpenAPIJar())                    //for now, we'll get it manually
 }
 
+/**
+ This packages the java from this project with the open api jar from gradle into a single jar.
+ If you update the plugin and need to resubmit it to Idea, it needs to be in this form.
+ */
+task packageIntoSingleJar( dependsOn: build, description: "Builds the plugin, packaging it into a single jar file suitable for uploading to Idea's plugin repository.") <<
+{
+   ant.jar( destfile: getBuiltPluginFile() )
+   {
+     zipgroupfileset( file: jar.archivePath.getAbsolutePath() )
+     zipgroupfileset( file: getOpenAPIJar().getAbsolutePath() )
+   }
+}
 /*
 This builds and deploys the idea plugin to the current Idea installation. This is really just copying jars to a specific
 directory. We get that directory from Idea's installation.
  */
-task deploy(dependsOn: build, description: 'Builds and places the Gradle GUI plugin in your Idea plugin directory') <<
-        {
-            //This is the directory for a user's Idea plugins (vs the ones that are built-in and stored with the application itself).
-            //Idea stores a property that defines where this is. We'll ask it.
-            def userPluginsDirectory = getIdeaFileProperty('idea.plugins.path')
-            if (userPluginsDirectory == null)
-                throw new RuntimeException("Could not determine the directory for user plugins. You'll have to manually deploy it.")
+task deploy(dependsOn: packageIntoSingleJar, description: 'Builds and places the Gradle GUI plugin in your Idea plugin directory') <<
+{
+    //This is the directory for a user's Idea plugins (vs the ones that are built-in and stored with the application itself).
+    //Idea stores a property that defines where this is. We'll ask it.
+    def userPluginsDirectory = getIdeaFileProperty('idea.plugins.path')
+    if (userPluginsDirectory == null)
+        throw new RuntimeException("Could not determine the directory for user plugins. You'll have to manually deploy it.")
 
-            def destinationDirectory = new File(userPluginsDirectory, "gradle gui/lib")
-            destinationDirectory.mkdirs()
+    //delete older versions of the plugin. Idea doesn't like using two versions of the same plugin.
+    deleteExistingPlugin( userPluginsDirectory );
 
-            //delete the old plugin files
-            destinationDirectory.eachFile { it.delete() }
+    //copy the jars to the destination
+    ant.copy(file: getBuiltPluginFile(), toDir: userPluginsDirectory.getAbsolutePath() )
+}
 
-            //copy the jars to the destination
-            ant.copy(file: jar.archivePath, tofile: new File(destinationDirectory, "gradle gui.jar").getAbsolutePath())  //we want to remove any versioning from the jar name
-            ant.copy(file: getOpenAPIJar().getAbsolutePath(), todir: destinationDirectory)
-        }
-
+def getBuiltPluginFile()
+{
+  return new File(buildDir, 'plugin/gradle gui.jar')
+}
 /**
  This gets all the jar files inside Idea's lib directory that we depend upon.
  These are shipped with Idea.
@@ -300,4 +312,50 @@ def getIdeaFilePropertyFromInfoPlist(String propertyName) {
 task wrapper(type: Wrapper) {
     gradleVersion = '0.9-20100315112026+0100'
     jarPath = 'wrapper'
+}
+
+/**
+ This deletes an existing Gradle GUI plugin in the users plugin directory.
+ */
+def deleteExistingPlugin( File userPluginsDirectory )
+{
+    userPluginsDirectory.eachFile( {
+        if( isGradlePlugin( it ) )
+        {
+          if( it.isFile() )
+            ant.delete( file: it.getAbsoluteFile() )
+          else
+            ant.delete( dir: it.getAbsoluteFile() )
+        }
+      } )
+}
+
+/**
+ Determines if the given file is a gradle plugin file/directory. We have to track files made
+ by this project (current and older versions) as well as ones modified by Idea (once submitted
+ to IntelliJ).
+ */
+boolean isGradlePlugin( File file )
+{
+  String lowerCaseFileName = file.getName().toLowerCase()
+  if( file.isDirectory() )
+  {
+    //is it the first version of the plugin? It wasn't yet packaged into a single jar and was in sub directory 'gradle gui/lib'
+    if( lowerCaseFileName.toLowerCase().startsWith( 'gradle gui' ) )
+      return true
+  }
+
+  //at this point, we know its a file.
+
+  //If you download it inside Idea, the jar file is renamed so spaces are underscores and
+  //it appends a version number to it. Ex: "Gradle_GUI_7976.jar"
+  if( lowerCaseFileName.startsWith( 'gradle_gui_' ) && lowerCaseFileName.endsWith( '.jar' ) )
+    return true
+
+  //does it have the same name we're currently building?
+  String currentPluginName = getBuiltPluginFile().getName()
+  if( file.getName().equals( currentPluginName ) )
+    return true
+
+  return false
 }

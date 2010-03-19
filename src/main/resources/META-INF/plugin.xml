@@ -1,16 +1,14 @@
 <idea-plugin version="2">
    <name>Gradle GUI</name>
    <id>Gradle GUI</id>
-   <description>This adds graphical Gradle support to Idea. This allows Gradle tasks to be executed via a tree structure
-       showing all available tasks or entering command-line arguments. Frequently-used tasks can be added to the Favorites tab
-       for quicker access. Output is shown in a separate panel allowing the main UI to be vertical and the output to be
-       horizontal. This makes use of the same UI embedded in Gradle itself, but allows editing of .gradle files directly
-       within Idea.
-       This Gradle UI is only displayed for projects that define a Gradle home in Idea's project settings.
+   <description>This provides a graphical representation of Gradle projects and tasks and allows execution of Gradle tasks
+       directly within Idea. Frequently-used tasks can be added to the Favorites tab for quicker access. Output is shown in
+       a separate panel allowing the main UI to be vertical and the output to be horizontal. This is the same UI as the UI
+       embedded in Gradle itself.
    </description>
-   <version>1.0</version>
-   <change-notes></change-notes>
-   <vendor url="" email="" >Gradle</vendor>
+   <version>1.1</version>
+   <change-notes>Adding website link and updating description. No new functionality.</change-notes>
+   <vendor url="http://wiki.github.com/gradle/gradle-intellij-gui/" email="" >Gradle</vendor>
    <idea-version since-build="93.13"/>
    <depends>org.intellij.groovy</depends>
 
