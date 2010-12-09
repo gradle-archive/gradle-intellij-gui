@@ -26,18 +26,13 @@ import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.peer.PeerFactory;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
+import org.gradle.ideaplugin.util.GradleUtils;
 import org.gradle.openapi.external.ui.DualPaneUIVersion1;
 import org.gradle.openapi.external.ui.OutputObserverVersion1;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.plugins.groovy.gradle.GradleLibraryManager;
 
-import javax.imageio.ImageIO;
 import javax.swing.Icon;
-import javax.swing.ImageIcon;
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
-import java.awt.image.BufferedImage;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,6 +50,7 @@ public class GradleOutputComponent implements ProjectComponent, GradleUIAvailabi
    public static final String TOOL_WINDOW_ID = "Gradle Output"; //this will show up on the 'tab' in Idea. It will also show up as the title on this window.
    private DualPaneUIVersion1 gradleUI;
    private AnimatedToolIcon animatedToolIcon;
+   private Icon gradleIcon;
 
    public GradleOutputComponent( Project project )
    {
@@ -63,6 +59,7 @@ public class GradleOutputComponent implements ProjectComponent, GradleUIAvailabi
 
    public void initComponent()
    {
+      gradleIcon = GradleUtils.loadGradleIcon();
       GradleUIApplicationComponent gradleUIApplicationComponent = ApplicationManager.getApplication().getComponent( GradleUIApplicationComponent.class );
       gradleUIApplicationComponent.addUIAvailabilityObserver( this, true, false );
    }
@@ -154,11 +151,11 @@ public class GradleOutputComponent implements ProjectComponent, GradleUIAvailabi
       loadIcon( "/org/gradle/ideaplugin/ui/gradle_busy_7.png", icons );
       loadIcon( "/org/gradle/ideaplugin/ui/gradle_busy_8.png", icons );
 
-      animatedToolIcon = new AnimatedToolIcon( myToolWindow, 100, GradleLibraryManager.GRADLE_ICON, icons );
+      animatedToolIcon = new AnimatedToolIcon( myToolWindow, 100, gradleIcon, icons );
    }
 
    //this safely loads the icons. Specifically, it doesn't crash if the icons aren't found.
-   private void loadIcon( String path, List<Icon> icons )
+   public static void loadIcon( String path, List<Icon> icons )
    {
       try
       {
@@ -275,7 +272,7 @@ public class GradleOutputComponent implements ProjectComponent, GradleUIAvailabi
             {
                if( gradleUI == null )
                {
-                  myToolWindow.setIcon( GradleLibraryManager.GRADLE_ICON );
+                  myToolWindow.setIcon( gradleIcon );
                   animatedToolIcon.stop();
                }
                else

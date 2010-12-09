@@ -29,13 +29,14 @@ import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.peer.PeerFactory;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
+import org.gradle.ideaplugin.util.GradleUtils;
 import org.gradle.openapi.external.ui.DualPaneUIVersion1;
 import org.gradle.openapi.external.ui.GradleTabVersion1;
 import org.gradle.openapi.external.ui.SettingsNodeVersion1;
 import org.jdom.Element;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.plugins.groovy.gradle.GradleLibraryManager;
 
+import javax.swing.Icon;
 import javax.swing.JPanel;
 
 /*
@@ -186,9 +187,10 @@ public class MainGradleComponent implements ProjectComponent, ProjectManagerList
          ContentFactory contentFactory = PeerFactory.getInstance().getContentFactory();
          Content content = contentFactory.createContent(gradlePanel, "", false );
          myToolWindow.getContentManager().addContent( content );
-
+         
          //set the icon. (should be 13 x 13?  but this one works...)
-         myToolWindow.setIcon(GradleLibraryManager.GRADLE_ICON);
+         Icon gradleIcon = GradleUtils.loadGradleIcon();
+         myToolWindow.setIcon(gradleIcon);
       }
       else
          unregisterToolWindow();

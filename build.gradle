@@ -54,7 +54,7 @@ task deploy(dependsOn: packageIntoSingleJar, description: 'Builds and places the
 
 def getBuiltPluginFile()
 {
-  return new File(buildDir, 'plugin/gradle gui.jar')
+  return new File(buildDir, 'plugin/gradle_gui.jar')
 }
 /**
  This gets all the jar files inside Idea's lib directory that we depend upon.
@@ -347,10 +347,17 @@ boolean isGradlePlugin( File file )
 
   //at this point, we know its a file.
 
-  //If you download it inside Idea, the jar file is renamed so spaces are underscores and
-  //it appends a version number to it. Ex: "Gradle_GUI_7976.jar"
-  if( lowerCaseFileName.startsWith( 'gradle_gui_' ) && lowerCaseFileName.endsWith( '.jar' ) )
-    return true
+  if( lowerCaseFileName.endsWith( '.jar' ) )
+  {
+    //If you download it inside Idea, the jar file is renamed so spaces are underscores and
+    //it appends a version number to it. Ex: "Gradle_GUI_7976.jar"
+    if( lowerCaseFileName.startsWith( 'gradle_gui_' )  )
+      return true
+
+    //early versions were gradle gui with a space. People complained (I guess they used command line tools frequently and the space complicated things).
+    if( lowerCaseFileName.startsWith( 'gradle gui') )
+      return true
+  }
 
   //does it have the same name we're currently building?
   String currentPluginName = getBuiltPluginFile().getName()

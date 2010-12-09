@@ -5,11 +5,16 @@
        directly within Idea. Frequently-used tasks can be added to the Favorites tab for quicker access. Output is shown in
        a separate panel allowing the main UI to be vertical and the output to be horizontal. This is the same UI as the UI
        embedded in Gradle itself.
+
+       Note: you can assign a keyboard shortcuts within Idea to re-execute the last gradle command and to
+       execute gradle favorites. To do so, go to Idea's settings -> Keymap and select Other. In this list find commands
+       prefixed with "Gradle: ". The favorites are keyed off of the display name so it can work across projects as long
+       as their name is the same. 
    </description>
-   <version>1.1</version>
-   <change-notes>Adding website link and updating description. No new functionality.</change-notes>
-   <vendor url="http://wiki.github.com/gradle/gradle-intellij-gui/" email="" >Gradle</vendor>
-   <idea-version since-build="93.13"/>
+   <version>1.3</version>
+   <change-notes>Fixing compatibility with Idea 10 EAP.</change-notes>
+   <vendor url="http://wiki.github.com/gradle/gradle-intellij-gui/" email="user@gradle.codehaus.org" >Gradle</vendor>
+   <idea-version since-build="98.187"/>
    <depends>org.intellij.groovy</depends>
 
    <application-components>

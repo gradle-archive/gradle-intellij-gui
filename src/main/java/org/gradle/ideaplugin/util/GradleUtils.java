@@ -15,14 +15,13 @@
  */
 package org.gradle.ideaplugin.util;
 
+import com.intellij.openapi.util.IconLoader;
 import org.gradle.ideaplugin.ui.MainGradleComponent;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.plugins.groovy.config.AbstractGroovyLibraryManager;
-import org.jetbrains.plugins.groovy.gradle.GradleLibraryManager;
 import org.jetbrains.plugins.groovy.gradle.GradleSettings;
 import org.jetbrains.plugins.groovy.util.SdkHomeConfigurable;
 
@@ -48,25 +47,6 @@ public class GradleUtils
       }
 
       return access;
-   }
-
-
-   public static GradleLibraryManager getLibraryManager()
-   {
-      try
-      {
-         return AbstractGroovyLibraryManager.EP_NAME.findExtension(GradleLibraryManager.class);
-      }
-      catch (ClassCastException e)
-      {
-         //note: this can fail when trying to develop plugins due to classloader issues. Idea copies the Groovy plugin jars to the
-         //sandbox which makes this plugin load those instead of using the ones from the existing plugin (we depend on org.intellij.groovy).
-         //You'll get a ClassCastException even though the classes are exactly the same. This is a ClassLoader issue.
-         //The fix is to delete the additional groovy jars from your sandbox (the ones copied into this plugin as if they were external
-         //dependencies -- gradle open api jar will be in the same directory). But you'll have to do this each time you compile. Ugg.
-         e.printStackTrace();
-         return null;
-      }
    }
 
    /**
@@ -114,5 +94,18 @@ public class GradleUtils
             mainGradleComponent.reset();
          }
       });
+   }
+
+   //this safely loads the default gradle icon.
+   public static Icon loadGradleIcon()
+   {
+      try
+      {
+         return IconLoader.getIcon( "/org/gradle/ideaplugin/ui/gradle_16x16.png" );
+      }
+      catch( Exception e )
+      {
+         return null;
+      }
    }
 }
