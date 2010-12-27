@@ -1,4 +1,4 @@
-apply id: 'java'
+apply plugin: 'java'
 
 /*
 This builds the Idea gradle plugin. This requires a copy of Idea 9 to be installed on your machine as well as at least Gradle.
