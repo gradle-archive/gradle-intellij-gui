@@ -1,4 +1,5 @@
 apply plugin: 'java'
+apply plugin: 'idea'
 
 /*
 This builds the Idea gradle plugin. This requires a copy of Idea 9 to be installed on your machine as well as at least Gradle.
@@ -310,8 +311,7 @@ def getIdeaFilePropertyFromInfoPlist(String propertyName) {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '0.9-20100315112026+0100'
-    jarPath = 'wrapper'
+    gradleVersion = '0.9.1'
 }
 
 /**
