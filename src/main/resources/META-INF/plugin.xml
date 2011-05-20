@@ -11,8 +11,9 @@
        prefixed with "Gradle: ". The favorites are keyed off of the display name so it can work across projects as long
        as their name is the same. 
    </description>
-   <version>1.3</version>
-   <change-notes>Fixing compatibility with Idea 10 EAP.</change-notes>
+   <version>1.4</version>
+   <change-notes>1.3: Fixing compatibility with Idea 10 EAP.</change-notes>
+   <change-notes>1.4: Fixing compatibility with Idea 10.5.</change-notes>
    <vendor url="http://wiki.github.com/gradle/gradle-intellij-gui/" email="user@gradle.codehaus.org" >Gradle</vendor>
    <idea-version since-build="98.187"/>
    <depends>org.intellij.groovy</depends>

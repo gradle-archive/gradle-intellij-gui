@@ -23,7 +23,6 @@ import com.intellij.openapi.components.StorageScheme;
 import com.intellij.openapi.project.Project;
 import org.gradle.openapi.external.ui.SettingsNodeVersion1;
 import org.jdom.Element;
-import org.jetbrains.plugins.groovy.gradle.ui.*;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -138,26 +137,38 @@ public class GradleUISettings2 implements PersistentStateComponent<Element>
     * See the class header for more information.
     * This is used so if you had an early copy of Idea that used the older settings, we'll preserve
     * those settings when you use this plugin. This could eventually go away.
+    *
+    * Later: apparently, GradleUISettings was removed from Idea 10.5. I spent a little bit of time
+    * trying to make this class resistant to that, but ultimately, just decided to comment it out.
+    * I'm leaving it here for historical purposes.
+    *
     * @param project your current project
     */
    public void upgradeSettings( Project project )
    {
-      GradleUISettings oldSettings = GradleUISettings.getInstance( project );
-      if( oldSettings != null )
-         copySettings( oldSettings.getRootNode(), this.getRootNode() );
+      //try
+      //{
+      //   GradleUISettings oldSettings = GradleUISettings.getInstance( project );
+      //   if( oldSettings != null )
+      //      copySettings( oldSettings.getRootNode(), this.getRootNode() );
+      //}
+      //catch( Throwable e )
+      //{
+      //   //ignore this. It seems IntelliJ removed or moved GradleUISettings in 10.5
+      //}
    }
 
-   private void copySettings( org.jetbrains.plugins.groovy.gradle.ui.GradleIdeaSettingsNode sourceSettings, GradleIdeaSettingsNode destinationSettings )
-   {
-      destinationSettings.setValue( sourceSettings.getValue() );
-
-      Iterator iterator = sourceSettings.getChildNodes().iterator();
-      while (iterator.hasNext())
-      {
-         org.jetbrains.plugins.groovy.gradle.ui.GradleIdeaSettingsNode sourceChild = (org.jetbrains.plugins.groovy.gradle.ui.GradleIdeaSettingsNode) iterator.next();
-         GradleIdeaSettingsNode destinationChild = (GradleIdeaSettingsNode) destinationSettings.addChild(sourceChild.getName() );
-
-         copySettings( sourceChild, destinationChild );
-      }
-   }
+   //private void copySettings( org.jetbrains.plugins.groovy.gradle.ui.GradleIdeaSettingsNode sourceSettings, GradleIdeaSettingsNode destinationSettings )
+   //{
+   //   destinationSettings.setValue( sourceSettings.getValue() );
+   //
+   //   Iterator iterator = sourceSettings.getChildNodes().iterator();
+   //   while (iterator.hasNext())
+   //   {
+   //      org.jetbrains.plugins.groovy.gradle.ui.GradleIdeaSettingsNode sourceChild = (org.jetbrains.plugins.groovy.gradle.ui.GradleIdeaSettingsNode) iterator.next();
+   //      GradleIdeaSettingsNode destinationChild = (GradleIdeaSettingsNode) destinationSettings.addChild(sourceChild.getName() );
+   //
+   //      copySettings( sourceChild, destinationChild );
+   //   }
+   //}
 }
