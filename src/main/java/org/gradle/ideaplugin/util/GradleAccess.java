@@ -16,107 +16,46 @@
 package org.gradle.ideaplugin.util;
 
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.VfsUtil;
-import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.plugins.gradle.util.GradleLibraryManager;
 
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 public class GradleAccess
 {
-   private static final String GRADLE_DIRECTORY = "tools/gradle";
-
    @Nullable private final ClassLoader gradleClassLoader;
-   @Nullable private final File projectRootDir;
-
-   //this constructor is useful if you haven't opened a project yet, or know of where a gradle home directory
-   //is through some other means.
-   public GradleAccess( File projectRootDir )
-   {
-      this.projectRootDir = projectRootDir;
-      gradleClassLoader = createGradleClassLoader( getGradleLibJars( getGradleHomeDirectory() ) );
-      initGradleHome();
-   }
 
    public GradleAccess(final Project project)
    {
-      VirtualFile baseDir = project.getBaseDir();
-      if (baseDir != null)
-         projectRootDir = VfsUtil.virtualToIoFile(baseDir).getParentFile().getParentFile();
-      else
-         projectRootDir = new File(System.getProperty("user.dir"));
-
+      initGradleHome( getGradleHomeDirectory( project ) );
       gradleClassLoader = createGradleClassLoader( getGradleLibJars( project ) );
-      initGradleHome();
    }
 
-   private void initGradleHome()
+   private void initGradleHome( File gradleHomeDirectory )
    {
-      System.setProperty("gradle.home", getGradleHomeDirectory().getAbsolutePath());
+      System.setProperty("gradle.home", gradleHomeDirectory.getAbsolutePath());
    }
 
-   @Nullable public File getProjectRootDir()
+   public File getGradleHomeDirectory( Project project )
    {
-      return projectRootDir;
+      return GradleLibraryManager.INSTANCE.getGradleHome( project );
    }
 
-   public File getGradleHomeDirectory()
+   private List<URL> getGradleLibJars( Project project )
    {
-      return new File( projectRootDir, GRADLE_DIRECTORY );
-   }
-
-   private static List<URL> getGradleLibJars( Project project )
-   {
-      List<VirtualFile> files = org.jetbrains.plugins.groovy.gradle.GradleSettings.getInstance(project).getClassRoots();
-      VirtualFile[] vfiles = files.toArray( new VirtualFile[ files.size() ] );
-      List<URL> urls = new ArrayList<URL>(vfiles.length );
-      convertToURLAndAddToList(vfiles, urls);
-      return urls;
-   }
-
-   //this reads off jars in the gradle lib directory
-   public static List<URL> getGradleLibJars( File gradleHomeDirectory )
-   {
-      List<URL> urls = new ArrayList<URL>();
-
-      File libDirectory = new File( gradleHomeDirectory, "lib" );
-      if( !libDirectory.exists() )
-         System.out.println( "Gradle directory '" + gradleHomeDirectory + "' does not exist!" );
-      else
-      {
-         File[] files = libDirectory.listFiles();
-         if( files != null && files.length != 0 )
-         {
-            for( int index = 0; index < files.length; index++ )
-            {
-               File file = files[index];
-               if( !file.isHidden() && !file.isDirectory() && file.getName().toLowerCase().endsWith( ".jar" ) )
-               {
-                  try
-                  {
-                     URL url = file.toURI().toURL();
-                     urls.add( url );
-                  }
-                  catch( MalformedURLException e )
-                  {
-                     e.printStackTrace();
-                  }
-               }
-            }
-         }
-      }
-
-      return urls;
+      Collection<File> allLibraries = GradleLibraryManager.INSTANCE.getAllLibraries( project );
+      return convertToURLList( allLibraries );
    }
 
    @Nullable private static ClassLoader createGradleClassLoader(final List<URL> urls )
    {
-      //return new URLClassLoader(urls.toArray(new URL[urls.size()]), ClassLoader.getSystemClassLoader());
       if( urls == null )
          return null;   //this happens for non-gradle projects.
 
@@ -151,27 +90,28 @@ public class GradleAccess
       };
    }
 
-   private static void convertToURLAndAddToList(VirtualFile[] vfiles, List<URL> urls)
+   private List<URL> convertToURLList( Collection<File> files )
    {
-      for (VirtualFile vfile : vfiles)
+      if( files == null )
+         return null;
+
+      List<URL> urls = new ArrayList<URL>();
+
+      Iterator<File> iterator = files.iterator();
+      while( iterator.hasNext() )
       {
-         if (vfile.isDirectory() && !"jar".equals(vfile.getExtension()))
+         File file = iterator.next();
+         try
          {
-            convertToURLAndAddToList(vfile.getChildren(), urls);
+            urls.add( file.toURI().toURL() );
          }
-         else
+         catch( MalformedURLException e )
          {
-            try
-            {
-               URL url = VfsUtil.virtualToIoFile(vfile).toURI().toURL();
-               urls.add(url);
-            }
-            catch (MalformedURLException ignored)
-            {
-               // just skip this one
-            }
+            //skip it
          }
       }
+
+      return urls;
    }
 
    //returns the gradle class loader. Note: this will be null for non-gradle projects.
@@ -180,6 +120,8 @@ public class GradleAccess
       return gradleClassLoader;
    }
 
+   //This allows you to execute groovy scripts using the current
+   //gradle settings (the groovy embedded within gradle).
    public ScriptExecutor createExecutor()
    {
       return new ScriptExecutor(gradleClassLoader);

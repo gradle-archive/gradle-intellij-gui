@@ -162,9 +162,7 @@ public class MainGradleComponent implements ProjectComponent, ProjectManagerList
     */
    private synchronized void initToolWindow()
    {
-      //Note: if gradle isn't configured, the gradle panel will say "gradle not configured". However,
-      //we don't want to show any gradle window if the project doesn't even specify a gradle home.
-      if( gradlePanelWrapper != null && gradlePanelWrapper.hasGradleHomeDirectory() )
+      if( gradlePanelWrapper != null )
       {
          if( myToolWindow == null )
          {
@@ -179,7 +177,10 @@ public class MainGradleComponent implements ProjectComponent, ProjectManagerList
                   }, true );
          }
          else
+         {
+            gradlePanelWrapper.reset();
             myToolWindow.getContentManager().removeAllContents(true);   //remove any previous contents (this can be called to reset a new gradle home)
+         }
 
          JPanel gradlePanel = gradlePanelWrapper.getMainComponent();
 

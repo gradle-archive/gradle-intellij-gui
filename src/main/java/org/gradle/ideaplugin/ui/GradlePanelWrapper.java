@@ -23,6 +23,7 @@ import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import org.gradle.ideaplugin.util.GradleUtils;
 import org.gradle.openapi.external.ui.AlternateUIInteractionVersion1;
 import org.gradle.openapi.external.ui.DualPaneUIInteractionVersion1;
 import org.gradle.openapi.external.ui.DualPaneUIVersion1;
@@ -31,7 +32,6 @@ import org.gradle.openapi.external.ui.SettingsNodeVersion1;
 import org.gradle.openapi.external.ui.SinglePaneUIInteractionVersion1;
 import org.gradle.openapi.external.ui.SinglePaneUIVersion1;
 import org.gradle.openapi.external.ui.UIFactory;
-import org.jetbrains.plugins.groovy.gradle.GradleSettings;
 
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -96,12 +96,7 @@ public class GradlePanelWrapper
     */
    public synchronized void reset()
    {
-      File newGradleHomeDirectory = null;
-
-      GradleSettings gradleSettings = GradleSettings.getInstance(myProject);
-      VirtualFile home = gradleSettings.getSdkHome();
-      if( home != null )
-         newGradleHomeDirectory = new File( home.getPath() );
+      File newGradleHomeDirectory = GradleUtils.getGradleSDKDirectory( myProject );
 
       //this will either load the UI from gradle or display the gradle setup panel.
       extractGradleUI(newGradleHomeDirectory);
@@ -216,7 +211,13 @@ public class GradlePanelWrapper
 
    private void addNotConfiguredPanel()
    {
-      addGradleSetupErrorPanel( "Gradle not configured", "" );
+      addGradleSetupErrorPanel( "Gradle not configured. Go to\n" +
+                                "File/Settings and select Gradle\n" +
+                                "in the Project Settings list on\n" +
+                                "the left. Then specify the path\n" +
+                                "on the right. Lastly press the\n" +
+                                "'" + GradleSetupErrorPanel.ATTEMPT_TO_RELOAD_UI_TEXT + "'\n" +
+                                "button.",  null );
    }
 
    /**
@@ -231,12 +232,16 @@ public class GradlePanelWrapper
    private void addGradleSetupErrorPanel( String message, String messageDetails )
    {
       if( gradleSetupErrorPanel == null )
-         gradleSetupErrorPanel = new GradleSetupErrorPanel( myProject );
+         gradleSetupErrorPanel = new GradleSetupErrorPanel( myProject, new GradleSetupErrorPanel.GradleLoader()
+         {
+            public void reload()
+            {
+               reset();
+            }
+         } );
 
       if( this.gradleHomeDirectory != null )
          messageDetails += "\n" + this.gradleHomeDirectory.getAbsolutePath();
-      else
-         messageDetails += "\nNo gradle home set.";
 
       gradleSetupErrorPanel.aboutToShow();
       gradleSetupErrorPanel.setMessage( message, messageDetails );

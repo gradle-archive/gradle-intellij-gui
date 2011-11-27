@@ -19,10 +19,9 @@ import com.intellij.openapi.util.IconLoader;
 import org.gradle.ideaplugin.ui.MainGradleComponent;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.io.FileUtil;
-import com.intellij.openapi.vfs.VfsUtil;
-import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.plugins.groovy.gradle.GradleSettings;
+import org.jetbrains.plugins.gradle.config.GradleSettings;
+import org.jetbrains.plugins.gradle.util.GradleLibraryManager;
 import org.jetbrains.plugins.groovy.util.SdkHomeConfigurable;
 
 import javax.swing.*;
@@ -56,16 +55,7 @@ public class GradleUtils
     */
    public static File getGradleSDKDirectory(Project project)
    {
-      File sdkDirectory = null;
-      GradleSettings gradleSettings = GradleSettings.getInstance(project);
-      if (gradleSettings != null)
-      {
-         VirtualFile homeDirectory = gradleSettings.getSdkHome();
-         if (homeDirectory != null)
-            sdkDirectory = VfsUtil.virtualToIoFile(homeDirectory);
-      }
-
-      return sdkDirectory;
+      return GradleLibraryManager.INSTANCE.getGradleHome( project );
    }
 
    /**
@@ -83,7 +73,7 @@ public class GradleUtils
       state.SDK_HOME = FileUtil.toSystemIndependentName( directory.getAbsolutePath() );
       GradleSettings gradleSettings = GradleSettings.getInstance(project);
       if( gradleSettings != null )
-         gradleSettings.loadState( state );
+         gradleSettings.GRADLE_HOME = directory.getAbsolutePath();
 
       //this tells the UI to update itself
       SwingUtilities.invokeLater(new Runnable()
@@ -103,7 +93,7 @@ public class GradleUtils
       {
          return IconLoader.getIcon( "/org/gradle/ideaplugin/ui/gradle_16x16.png" );
       }
-      catch( Exception e )
+      catch( Throwable e )
       {
          return null;
       }

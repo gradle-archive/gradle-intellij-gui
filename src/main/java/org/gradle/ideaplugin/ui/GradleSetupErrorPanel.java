@@ -17,19 +17,8 @@ package org.gradle.ideaplugin.ui;
 
 import com.intellij.openapi.project.Project;
 
-import javax.swing.AbstractAction;
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dimension;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 
 /**
@@ -42,19 +31,30 @@ import java.awt.event.ActionEvent;
   */
 public class GradleSetupErrorPanel
 {
+   public static final String ATTEMPT_TO_RELOAD_UI_TEXT = "Reload Gradle UI";
+
+   private GradleLoader gradleLoader;
    private Project myProject;
 
    private JPanel mainPanel;
    private JPanel messagePanel;
-   private JLabel messageLabel;
+   private JTextArea messageLabel;
 
    private String messageDetails;
    private String message;
    private JButton detailsButton;
+   private JButton reloadButton;
 
    //
-   public GradleSetupErrorPanel( Project myProject )
+             public interface GradleLoader
+             {
+                public void reload();
+             }
+
+   //
+   public GradleSetupErrorPanel( Project myProject, GradleLoader gradleLoader )
    {
+      this.gradleLoader = gradleLoader;
       this.myProject = myProject;
       setupUI();
    }
@@ -81,7 +81,17 @@ public class GradleSetupErrorPanel
       messagePanel = new JPanel();
       messagePanel.setLayout( new BoxLayout( messagePanel, BoxLayout.Y_AXIS ) );
 
-      messageLabel = new JLabel();
+      messageLabel = new JTextArea();
+      messageLabel.setBorder( null );
+      messageLabel.setEditable( false );
+
+      reloadButton =  new JButton( new AbstractAction( ATTEMPT_TO_RELOAD_UI_TEXT )
+      {
+         public void actionPerformed( ActionEvent e )
+         {
+            reload();
+         }
+      });
 
       detailsButton = new JButton( new AbstractAction( "Details...")
       {
@@ -91,20 +101,25 @@ public class GradleSetupErrorPanel
          }
       });
 
-      //this panel centers the details button 
-      JPanel centeringPanel = new JPanel();
-      centeringPanel.setLayout( new BoxLayout( centeringPanel, BoxLayout.X_AXIS ) );
-      centeringPanel.add( Box.createHorizontalGlue() );
-      centeringPanel.add( detailsButton );
-      centeringPanel.add( Box.createHorizontalGlue() );
-
-      messagePanel.add( messageLabel, BorderLayout.CENTER );
+      messagePanel.add( messageLabel );
       messagePanel.add( Box.createVerticalStrut( 10 ) );
-      messagePanel.add( centeringPanel );
+      messagePanel.add( centerComponent( detailsButton ) );
+      messagePanel.add( Box.createVerticalStrut( 30 ) );
+      messagePanel.add( centerComponent( reloadButton ) );
 
       messagePanel.setVisible( false );   //hidden by default.
 
       return messagePanel;
+   }
+   
+   private JPanel centerComponent( JComponent component )
+   {
+      JPanel centeringPanel = new JPanel();
+      centeringPanel.setLayout( new BoxLayout( centeringPanel, BoxLayout.X_AXIS ) );
+      centeringPanel.add( Box.createHorizontalGlue() );
+      centeringPanel.add( component );
+      centeringPanel.add( Box.createHorizontalGlue() );
+      return centeringPanel;
    }
 
    private void showDetails()
@@ -127,15 +142,24 @@ public class GradleSetupErrorPanel
       JOptionPane.showMessageDialog( mainPanel, scrollPane );
    }
 
+   /**
+    * This sets the message and optional details to display in the panel.
+    * @param message a description of the problem for the user
+    * @param messageDetails optional lengthy (or ugly) details about the
+    *                       problem that are accessed when a user hits
+    *                       a Details button. Null to ignore and hide said
+    *                       button.
+    */
    public void setMessage( String message, String messageDetails )
    {
       this.messageDetails = messageDetails;
       this.message = message;
 
-      messageLabel.setText( "<html><body>" + message + "</body></html>" );
+      messageLabel.setText( this.message );
 
       detailsButton.setVisible( messageDetails != null );   //only show the 'details' button if there are details
 
+      messageLabel.setVisible( true );
       messagePanel.setVisible( true );
    }
 
@@ -152,5 +176,10 @@ public class GradleSetupErrorPanel
    public void aboutToShow()
    {
 
+   }
+
+   private void reload()
+   {
+      gradleLoader.reload();
    }
 }

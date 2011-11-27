@@ -150,6 +150,10 @@ public class GradleOutputComponent implements ProjectComponent, GradleUIAvailabi
       loadIcon( "/org/gradle/ideaplugin/ui/gradle_busy_6.png", icons );
       loadIcon( "/org/gradle/ideaplugin/ui/gradle_busy_7.png", icons );
       loadIcon( "/org/gradle/ideaplugin/ui/gradle_busy_8.png", icons );
+      loadIcon( "/org/gradle/ideaplugin/ui/gradle_busy_9.png", icons );
+      loadIcon( "/org/gradle/ideaplugin/ui/gradle_busy_10.png", icons );
+      loadIcon( "/org/gradle/ideaplugin/ui/gradle_busy_11.png", icons );
+      loadIcon( "/org/gradle/ideaplugin/ui/gradle_busy_12.png", icons );
 
       animatedToolIcon = new AnimatedToolIcon( myToolWindow, 100, gradleIcon, icons );
    }

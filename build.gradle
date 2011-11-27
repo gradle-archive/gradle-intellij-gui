@@ -82,7 +82,8 @@ def getIdeaLibFiles() {
  */
 def getIdeaPluginFiles() {
     def pluginsDirectory = getIdeaBuiltInPluginsDirectory()
-    def files = [new File(pluginsDirectory, 'Groovy/lib/Groovy.jar')]
+    def files = [new File(pluginsDirectory, 'Groovy/lib/Groovy.jar'),
+                 new File(pluginsDirectory, 'gradle/lib/gradle.jar')]
 
     verifyFilesExist(files)
 
@@ -203,6 +204,7 @@ def getVersionedJar(File libDirectory, String prefix) {
     File[] files = libDirectory.listFiles().findAll { it.name.toLowerCase().startsWith(prefix) && it.name.toLowerCase().endsWith('.jar') }
 
     if (files == null || files.length == 0) {
+
         return null
     }
 
@@ -236,8 +238,11 @@ def getOpenAPIJar() {
         jar = getVersionedJar(parentDirectory, 'gradle-open-api-')
     }
 
-    if (jar == null)
+    if (jar == null )
         throw new RuntimeException('Could not locate gradle-open-api jar. It will be determined from the currently running gradle\'s \'gradle.home\', or you can specify it as \'open-api.home\' as a java system property or gradle property. Its the path to the directory where the open-api jar is located.')
+
+    if ( !jar.exists() )
+        throw new RuntimeException("gradle-open-api jar doesn't exist. Looking at '" + jar.getAbsolutePath() + "'" )
 
     return jar
 }
