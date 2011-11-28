@@ -14,12 +14,12 @@ ideaBuiltInPluginsDirectoryVar = null
 
 dependencies
 {
-    compile files(getIdeaLibFiles())
-    compile files(getIdeaPluginFiles())
+    compile files(getIdeaLibFiles( false ))
+    compile files(getIdeaPluginFiles( false ))
 
     //Need to compiles against the gradle-open-api jar. This defines the version of gradle the plugin works with.
     //compile 'org.codehaus.gradle:gradle-open-api:0.9'  whenever gradle is put into a repo (this is probably not the correct specifier)
-    compile files(getOpenAPIJar())                    //for now, we'll get it manually
+    compile files(getOpenAPIJar( false ))                    //for now, we'll get it manually
 }
 
 /**
@@ -31,7 +31,7 @@ task packageIntoSingleJar( dependsOn: build, description: "Builds the plugin, pa
    ant.jar( destfile: getBuiltPluginFile() )
    {
      zipgroupfileset( file: jar.archivePath.getAbsolutePath() )
-     zipgroupfileset( file: getOpenAPIJar().getAbsolutePath() )
+     zipgroupfileset( file: getOpenAPIJar( true ).getAbsolutePath() )
    }
 }
 /*
@@ -61,17 +61,21 @@ def getBuiltPluginFile()
  This gets all the jar files inside Idea's lib directory that we depend upon.
  These are shipped with Idea.
  */
-def getIdeaLibFiles() {
+def getIdeaLibFiles( boolean verifyFiles ) {
     def ideaLibDirectory = getIdeaLibDirectory()
+    if( ideaLibDirectory == null )
+      return new ArrayList();
+
     def files = [new File(ideaLibDirectory, 'annotations.jar'),
             new File(ideaLibDirectory, 'extensions.jar'),
-            getVersionedJar(getIdeaLibDirectory(), "groovy-all"),  //the name of the groovy jar is versioned, most of the rest are not.
+            getVersionedJar( ideaLibDirectory, "groovy-all"),  //the name of the groovy jar is versioned, most of the rest are not.
             new File(ideaLibDirectory, 'idea.jar'),
             new File(ideaLibDirectory, 'jdom.jar'),
             new File(ideaLibDirectory, 'openapi.jar'),
             new File(ideaLibDirectory, 'util.jar')]
 
-    verifyFilesExist(files)
+    if( verifyFiles )
+      verifyFilesExist(files)
 
     return files
 }
@@ -80,12 +84,16 @@ def getIdeaLibFiles() {
  This gets all the jar files from Idea's built-in plugins that we depend upon.
  These are shipped with Idea.
  */
-def getIdeaPluginFiles() {
+def getIdeaPluginFiles( boolean verifyFiles ) {
     def pluginsDirectory = getIdeaBuiltInPluginsDirectory()
-    def files = [new File(pluginsDirectory, 'Groovy/lib/Groovy.jar'),
-                 new File(pluginsDirectory, 'gradle/lib/gradle.jar')]
+    if( pluginsDirectory == null )
+      return []
 
-    verifyFilesExist(files)
+    def files = [new File(pluginsDirectory, 'Groovy/lib/Groovy.jar'),
+                   new File(pluginsDirectory, 'gradle/lib/gradle.jar')]
+
+    if( verifyFiles )
+       verifyFilesExist(files)
 
     return files
 }
@@ -125,18 +133,13 @@ def getIdeaBuiltInPluginsDirectory() {
 
 def determineIdeaDirectory() {
     String ideaPath = getPropertyValue('idea.home') ?: System.getenv('IDEA_HOME')
-
-    if (ideaPath == null)
-        throw new RuntimeException('You must specify the path to Idea as the system property \'idea.home\'.')
-    File ideaDirectory = new File(ideaPath)
-    if (!ideaDirectory.exists())
-        throw new RuntimeException('Path to Idea invalid (\'' + ideaDirectory + '\'). You must specify the path to Idea as \'idea.home\' as a java system property or gradle property.')
-
-    int version = getIdeaBuildVersion(ideaDirectory)
-    if (version < 9)
-        throw new RuntimeException("Invalid version of Idea. This requires version 9 or higher.")
-
-    return ideaDirectory
+    if (ideaPath != null)
+    {
+      File ideaDirectory = new File(ideaPath)
+      if( ideaDirectory.exists())
+          return ideaDirectory;
+    }
+    return null
 }
 
 /**
@@ -185,10 +188,22 @@ def getIdeaBuildVersion(File ideaDirectory) {
 
 //this gets the lib directory underneath Idea
 
-def determineIdeaLibDirectory() { return new File(getIdeaDirectory(), "lib")}
+def determineIdeaLibDirectory(){  return determineSafeIdeaSubDirectory( "lib") }
 
-def determineIdeaBuildInPluginDirectory() { return new File(getIdeaDirectory(), "plugins")}
+def determineIdeaBuildInPluginDirectory() { return determineSafeIdeaSubDirectory( "plugins") }
 
+/**
+ This returns a subdirectory of the Idea home directory. If there is no Idea home directory
+ defined, this returns null
+
+ */
+def determineSafeIdeaSubDirectory( String subdirectory )
+{
+  File ideaDirectory = getIdeaDirectory()
+  if( ideaDirectory == null )
+    return null;
+  return new File( ideaDirectory, subdirectory );
+}
 /**
  This returns a jar named 'prefix[version].jar'. We want to ignore the version. This is only expecting a single
  version of the jar to exist and throws an exception if it finds multiples. This could be altered in the future
@@ -223,7 +238,7 @@ def getVersionedJar(File libDirectory, String prefix) {
  to build against a different version than the gradle you're building with (building for an older or newer version),
  so we also allow you to override it's expected location.
  */
-def getOpenAPIJar() {
+def getOpenAPIJar( boolean verify ) {
     def openAPIJar = getPropertyValue("open-api.home")
     if (openAPIJar == null) {
         def gradleHome = getPropertyValue("gradle.home") ?: gradle.gradleHomeDir as String
@@ -238,11 +253,14 @@ def getOpenAPIJar() {
         jar = getVersionedJar(parentDirectory, 'gradle-open-api-')
     }
 
-    if (jar == null )
-        throw new RuntimeException('Could not locate gradle-open-api jar. It will be determined from the currently running gradle\'s \'gradle.home\', or you can specify it as \'open-api.home\' as a java system property or gradle property. Its the path to the directory where the open-api jar is located.')
+    if( verify )
+    {
+      if (jar == null )
+          throw new RuntimeException('Could not locate gradle-open-api jar. It will be determined from the currently running gradle\'s \'gradle.home\', or you can specify it as \'open-api.home\' as a java system property or gradle property. Its the path to the directory where the open-api jar is located.')
 
-    if ( !jar.exists() )
-        throw new RuntimeException("gradle-open-api jar doesn't exist. Looking at '" + jar.getAbsolutePath() + "'" )
+      if ( !jar.exists() )
+          throw new RuntimeException("gradle-open-api jar doesn't exist. Looking at '" + jar.getAbsolutePath() + "'" )
+    }
 
     return jar
 }
@@ -371,3 +389,37 @@ boolean isGradlePlugin( File file )
 
   return false
 }
+
+/**
+ This verifies that certain required files (like Idea's home directory)
+ are defined and throws an exception if not. This is actually intended to
+ provide the user with useful feedback if they attempt to execute some
+ code when things aren't setup properly.
+ Mostly, this is here so you can get a task list without an error (because
+ you failed to specify Idea's home), but you will then be told of an error
+ when you attempt to execute a task (and have failed to specify Idea's home).
+ */
+def assertRequiredFilesDefined()
+{
+
+  //make sure Idea's home is defined properly
+  File ideaDirectory = determineIdeaDirectory()
+  if (ideaDirectory== null)
+      throw new RuntimeException('You must specify the path to Idea as the system property \'idea.home\'.')
+
+  if (!ideaDirectory.exists())
+      throw new RuntimeException('Path to Idea invalid (\'' + ideaDirectory + '\'). You must specify the path to Idea as \'idea.home\' as a java system property or gradle property.')
+
+  int version = getIdeaBuildVersion(ideaDirectory)
+  if (version < 9)
+      throw new RuntimeException("Invalid version of Idea. This requires version 9 or higher.")
+
+  //verify the lib and plugin files exist
+  getIdeaLibFiles( true )
+  getIdeaPluginFiles( true )
+  
+  getOpenAPIJar( true )
+}
+
+//ensure you can't do a build unless you've verified certain things exist
+compileJava.doFirst { assertRequiredFilesDefined() }

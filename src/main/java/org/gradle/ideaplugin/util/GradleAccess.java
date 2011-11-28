@@ -45,12 +45,12 @@ public class GradleAccess
 
    public File getGradleHomeDirectory( Project project )
    {
-      return GradleLibraryManager.INSTANCE.getGradleHome( project );
+      return GradleUtils.getGradleLibraryManager().getGradleHome( project );
    }
 
    private List<URL> getGradleLibJars( Project project )
    {
-      Collection<File> allLibraries = GradleLibraryManager.INSTANCE.getAllLibraries( project );
+      Collection<File> allLibraries = GradleUtils.getGradleLibraryManager().getAllLibraries( project );
       return convertToURLList( allLibraries );
    }
 

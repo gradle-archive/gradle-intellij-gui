@@ -11,12 +11,13 @@
        prefixed with "Gradle: ". The favorites are keyed off of the display name so it can work across projects as long
        as their name is the same. 
    </description>
-   <version>1.5</version>
+   <version>1.6</version>
+   <change-notes>1.6: Fixing compatibility with Idea 11 EAP build 110.492. GradleLibraryManager.INSTANCE was removed from Idea and this plugin threw an exception on startup.</change-notes>
    <change-notes>1.5: Fixing compatibility with Idea 11 EAP. This version is not compatible with Idea 10. The main panel is now displayed even if Gradle's path isn't defined in Idea. This allows you to load the UI once Gradle is configured. Updated the icon based on Gradle's website.</change-notes>
    <change-notes>1.4: Fixing compatibility with Idea 10.5.</change-notes>
    <change-notes>1.3: Fixing compatibility with Idea 10 EAP.</change-notes>
    <vendor url="http://wiki.github.com/gradle/gradle-intellij-gui/" email="user@gradle.codehaus.org" >Gradle</vendor>
-   <idea-version since-build="110.291"/>
+   <idea-version since-build="110.492"/>
    <depends>org.intellij.groovy</depends>
    <depends>org.jetbrains.plugins.gradle</depends>
 

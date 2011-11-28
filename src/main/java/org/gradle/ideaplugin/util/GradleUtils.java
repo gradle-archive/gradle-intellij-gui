@@ -15,6 +15,7 @@
  */
 package org.gradle.ideaplugin.util;
 
+import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.util.IconLoader;
 import org.gradle.ideaplugin.ui.MainGradleComponent;
 import com.intellij.openapi.project.Project;
@@ -55,7 +56,12 @@ public class GradleUtils
     */
    public static File getGradleSDKDirectory(Project project)
    {
-      return GradleLibraryManager.INSTANCE.getGradleHome( project );
+      return getGradleLibraryManager().getGradleHome( project );
+   }
+
+   public static GradleLibraryManager getGradleLibraryManager()
+   {
+      return ServiceManager.getService( GradleLibraryManager.class );
    }
 
    /**
