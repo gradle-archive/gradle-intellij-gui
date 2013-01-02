@@ -92,7 +92,7 @@ def getIdeaPluginFiles( boolean verifyFiles ) {
     def files = [new File(pluginsDirectory, 'Groovy/lib/Groovy.jar'),
                    new File(pluginsDirectory, 'gradle/lib/gradle.jar')]
 
-    if( verifyFiles )
+  if( verifyFiles )
        verifyFilesExist(files)
 
     return files
@@ -166,9 +166,10 @@ def getIdeaBuildVersion(File ideaDirectory) {
 
     //the 9 versions changed their version strings to a 2-character code, followed by a decimal
     if (version.startsWith("IU-") ||
-            version.startsWith("IC-")) {
+        version.startsWith("IC-")) {
         //at this point, we know its at least version 9.
-        return 9
+
+        return 9 //could check for other versions, but we're not doing anything with that info
     }
 
     //all other versions were just an integer build number.

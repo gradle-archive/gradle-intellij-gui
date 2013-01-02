@@ -6,18 +6,19 @@
        a separate panel allowing the main UI to be vertical and the output to be horizontal. This is the same UI as the UI
        embedded in Gradle itself.
 
-       Note: you can assign a keyboard shortcuts within Idea to re-execute the last gradle command and to
+       Note: you can assign keyboard shortcuts within Idea to re-execute the last gradle command and to
        execute gradle favorites. To do so, go to Idea's settings -> Keymap and select Other. In this list find commands
        prefixed with "Gradle: ". The favorites are keyed off of the display name so it can work across projects as long
        as their name is the same. 
    </description>
-   <version>1.6</version>
+   <version>1.7</version>
+   <change-notes>1.7: Fixing compatibility with Idea 12. Idea was logging exceptions due to icon size changes. This generated excessively large log files.</change-notes>
    <change-notes>1.6: Fixing compatibility with Idea 11 EAP build 110.492. GradleLibraryManager.INSTANCE was removed from Idea and this plugin threw an exception on startup.</change-notes>
    <change-notes>1.5: Fixing compatibility with Idea 11 EAP. This version is not compatible with Idea 10. The main panel is now displayed even if Gradle's path isn't defined in Idea. This allows you to load the UI once Gradle is configured. Updated the icon based on Gradle's website.</change-notes>
    <change-notes>1.4: Fixing compatibility with Idea 10.5.</change-notes>
    <change-notes>1.3: Fixing compatibility with Idea 10 EAP.</change-notes>
    <vendor url="http://wiki.github.com/gradle/gradle-intellij-gui/" email="user@gradle.codehaus.org" >Gradle</vendor>
-   <idea-version since-build="110.492"/>
+   <idea-version since-build="123.72"/>
    <depends>org.intellij.groovy</depends>
    <depends>org.jetbrains.plugins.gradle</depends>
 

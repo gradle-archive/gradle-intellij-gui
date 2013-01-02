@@ -75,11 +75,15 @@ public class GradleUtils
       if( existingDirectory != null && existingDirectory.equals( directory ) )
          return;  //already set
 
-      SdkHomeConfigurable.SdkHomeBean state = new SdkHomeConfigurable.SdkHomeBean();
+      //Idea 11 and earlier
+      /*SdkHomeConfigurable.SdkHomeBean state = new SdkHomeConfigurable.SdkHomeBean();
       state.SDK_HOME = FileUtil.toSystemIndependentName( directory.getAbsolutePath() );
       GradleSettings gradleSettings = GradleSettings.getInstance(project);
       if( gradleSettings != null )
-         gradleSettings.GRADLE_HOME = directory.getAbsolutePath();
+         gradleSettings.GRADLE_HOME = directory.getAbsolutePath();*/
+
+      //Idea 12:
+      GradleSettings.applyGradleHome( directory.getAbsolutePath(), project );
 
       //this tells the UI to update itself
       SwingUtilities.invokeLater(new Runnable()
@@ -97,7 +101,7 @@ public class GradleUtils
    {
       try
       {
-         return IconLoader.getIcon( "/org/gradle/ideaplugin/ui/gradle_16x16.png" );
+         return IconLoader.getIcon( "/org/gradle/ideaplugin/ui/gradle_13x13.png" );
       }
       catch( Throwable e )
       {
